@@ -15,7 +15,6 @@
 #define JOYSTICK_BUTTON 22  
 
 // Variáveis globais
-volatile int numero_atual = 0;
 PIO pio = pio0;  
 uint sm = 0;     
 
@@ -24,6 +23,8 @@ volatile uint32_t ultimo_tempo_a = 0;
 volatile uint32_t ultimo_tempo_b = 0;
 const uint32_t TEMPO_DEBOUNCE = 200; // 200ms de debounce
 volatile uint32_t ultimo_tempo_joystick = 0;
+volatile int numero_atual = 0;
+
 
 // Variável para controlar a cor inicial e  a intensidade do brilho (0 a 255)
 uint8_t intensidade_acesa = 70;    
@@ -31,6 +32,13 @@ uint8_t intensidade_apagada = 10;
 volatile uint32_t cor_acesa = 0x00FF00;// Azul
 volatile uint32_t cor_apagada = 0xDDA0DD; //Lilás
 
+// Função para piscar o LED vermelho 5 vezes por segundo
+bool piscar_led_repetidamente(struct repeating_timer *t) {
+    static bool estado = false;
+    gpio_put(LED_R, estado);
+    estado = !estado;
+    return true; // Manter o timer ativo
+}
 
 
 // Mapeamento de números 5x5 na matriz WS2812
@@ -213,11 +221,13 @@ int main() {
     // Exibe o primeiro número inicial
     exibir_numero(numero_atual);
 
+ // Configuração do timer para piscar o LED vermelho
+    struct repeating_timer timer;
+    add_repeating_timer_ms(-100, piscar_led_repetidamente, NULL, &timer);
+
     // Loop principal (pisca LED vermelho)
     while (1) {
-        gpio_put(LED_R, 1);
-        sleep_ms(100);
-        gpio_put(LED_R, 0);
-        sleep_ms(100);
+        tight_loop_contents();
+
     }
 }
