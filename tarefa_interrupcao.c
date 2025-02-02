@@ -5,6 +5,7 @@
 #include "hardware/clocks.h"
 #include "hardware/uart.h"
 #include "ws2812.pio.h"
+#include <stdlib.h> 
 
 // Definição dos pinos
 #define LED_R 11
@@ -13,6 +14,8 @@
 #define BUTTON_A 5
 #define BUTTON_B 6
 #define MATRIX_WS2812 7
+#define JOYSTICK_BUTTON 22  
+
 
 // Variáveis globais
 volatile int numero_atual = 0;
@@ -30,6 +33,9 @@ volatile uint8_t brilho = 55;  // Brilho máximo (255 é totalmente brilhante, 0
 
 volatile uint32_t cor_acesa = 0x00FF00;   // 🟢 Verde
 volatile uint32_t cor_apagada = 0xFF0000; // ⚫ Preto (apagado)
+
+volatile uint32_t ultimo_tempo_joystick = 0;
+
 
 // Mapeamento de números 5x5 na matriz WS2812
 const uint32_t numeros[10][25] = {
@@ -70,39 +76,77 @@ void ws2812_put(uint32_t color) {
 void exibir_numero(int numero) {
     uint32_t leds[25];
 
+    // Exibir o número na matriz com as cores atuais
     for (int i = 0; i < 25; i++) {
         uint32_t cor = (numeros[numero][i] == 1) ? cor_acesa : cor_apagada;
         leds[i] = aplicar_brilho(cor);
     }
 
+    // Enviar os dados para os LEDs
     for (int i = 0; i < 25; i++) {
         ws2812_put(leds[i]);
     }
 }
 
-
 void botoes_irq_handler(uint gpio, uint32_t events) {
+    // Imprime o número do GPIO que gerou a interrupção
     printf("⚡ Interrupção detectada no GPIO %u\n", gpio);
     
+    // Obtém o tempo atual (em milissegundos) desde o boot
     uint32_t tempo_atual = to_ms_since_boot(get_absolute_time());
 
+    // 1. Interrupção do Botão A (Incrementar Número)
     if (gpio == BUTTON_A) {
-        if (tempo_atual - ultimo_tempo_a < TEMPO_DEBOUNCE) return;  // Debounce individual
+        // Verifica o tempo de debounce para evitar múltiplos acionamentos rápidos
+        if (tempo_atual - ultimo_tempo_a < TEMPO_DEBOUNCE) return;
         ultimo_tempo_a = tempo_atual;
+
+        // Incrementa o número atual e mantém dentro do intervalo de 0 a 9
         numero_atual = (numero_atual + 1) % 10;
         printf("Botão A pressionado: Incrementando número para %d\n", numero_atual);
+
+        // Atualiza a exibição do número na matriz de LEDs
+        exibir_numero(numero_atual);
     } 
+    
+    // 2. Interrupção do Botão B (Decrementar Número)
     else if (gpio == BUTTON_B) {
-        if (tempo_atual - ultimo_tempo_b < TEMPO_DEBOUNCE) return;  // Debounce individual
+        // Verifica o tempo de debounce para evitar múltiplos acionamentos rápidos
+        if (tempo_atual - ultimo_tempo_b < TEMPO_DEBOUNCE) return;
         ultimo_tempo_b = tempo_atual;
+
+        // Decrementa o número atual e mantém dentro do intervalo de 0 a 9
         numero_atual = (numero_atual - 1 + 10) % 10;
         printf("Botão B pressionado: Decrementando número para %d\n", numero_atual);
+
+        // Atualiza a exibição do número na matriz de LEDs
+        exibir_numero(numero_atual);
     }
+    
+    // 3. Interrupção do Joystick (Alterar Cores Aleatórias)
+    else if (gpio == JOYSTICK_BUTTON) { 
+        // Verifica o tempo de debounce para evitar múltiplos acionamentos rápidos
+        if (tempo_atual - ultimo_tempo_joystick < TEMPO_DEBOUNCE) return;
+        ultimo_tempo_joystick = tempo_atual;
 
-    exibir_numero(numero_atual);
+        // Gera cores RGB aleatórias para os LEDs acesos e apagados
+        uint8_t r_acesa = rand() % 256;
+        uint8_t g_acesa = rand() % 256;
+        uint8_t b_acesa = rand() % 256;
+        cor_acesa = (r_acesa << 16) | (g_acesa << 8) | b_acesa;
+
+        uint8_t r_apagada = rand() % 256;
+        uint8_t g_apagada = rand() % 256;
+        uint8_t b_apagada = rand() % 256;
+        cor_apagada = (r_apagada << 16) | (g_apagada << 8) | b_apagada;
+
+        // Imprime as novas cores geradas
+        printf("🎮 Joystick pressionado: Cores aleatórias alteradas! (Cor acesa: #%06X, Cor apagada: #%06X)\n", cor_acesa, cor_apagada);
+
+        // Atualiza a exibição do número na matriz de LEDs com as novas cores
+        exibir_numero(numero_atual);  // Exibe o número com as novas cores
+    }
 }
-
-
 
 
 int main() {
@@ -123,10 +167,14 @@ int main() {
     gpio_init(BUTTON_B);
     gpio_set_dir(BUTTON_B, GPIO_IN);
     gpio_pull_up(BUTTON_B);
-
-
     gpio_set_irq_enabled_with_callback(BUTTON_A, GPIO_IRQ_EDGE_FALL, true, &botoes_irq_handler);
     gpio_set_irq_enabled_with_callback(BUTTON_B, GPIO_IRQ_EDGE_FALL, true, &botoes_irq_handler);
+
+// Configuração do botão do joystick com pull-up
+    gpio_init(JOYSTICK_BUTTON);
+    gpio_set_dir(JOYSTICK_BUTTON, GPIO_IN);
+    gpio_pull_up(JOYSTICK_BUTTON);
+    gpio_set_irq_enabled_with_callback(JOYSTICK_BUTTON, GPIO_IRQ_EDGE_FALL, true, &botoes_irq_handler);
 
     // Inicialização do PIO para controle da matriz WS2812
     uint offset = pio_add_program(pio, &ws2812_program);
