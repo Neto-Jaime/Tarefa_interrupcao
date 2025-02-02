@@ -88,6 +88,20 @@ void exibir_numero(int numero) {
     }
 }
 
+// Função que calcula a distância Euclidiana entre duas cores RGB
+int calcular_distancia_rgb(uint32_t cor1, uint32_t cor2) {
+    uint8_t r1 = (cor1 >> 16) & 0xFF;
+    uint8_t g1 = (cor1 >> 8) & 0xFF;
+    uint8_t b1 = cor1 & 0xFF;
+
+    uint8_t r2 = (cor2 >> 16) & 0xFF;
+    uint8_t g2 = (cor2 >> 8) & 0xFF;
+    uint8_t b2 = cor2 & 0xFF;
+
+    // Distância Euclidiana no espaço RGB
+    return ((r2 - r1) * (r2 - r1)) + ((g2 - g1) * (g2 - g1)) + ((b2 - b1) * (b2 - b1));
+}
+
 void botoes_irq_handler(uint gpio, uint32_t events) {
     // Imprime o número do GPIO que gerou a interrupção
     printf("⚡ Interrupção detectada no GPIO %u\n", gpio);
@@ -129,16 +143,28 @@ void botoes_irq_handler(uint gpio, uint32_t events) {
         if (tempo_atual - ultimo_tempo_joystick < TEMPO_DEBOUNCE) return;
         ultimo_tempo_joystick = tempo_atual;
 
-        // Gera cores RGB aleatórias para os LEDs acesos e apagados
-        uint8_t r_acesa = rand() % 256;
-        uint8_t g_acesa = rand() % 256;
-        uint8_t b_acesa = rand() % 256;
-        cor_acesa = (r_acesa << 16) | (g_acesa << 8) | b_acesa;
+        uint32_t nova_cor_acesa, nova_cor_apagada;
+        int distancia_minima = 10000; // Distância mínima desejada entre as cores (ajustável)
 
-        uint8_t r_apagada = rand() % 256;
-        uint8_t g_apagada = rand() % 256;
-        uint8_t b_apagada = rand() % 256;
-        cor_apagada = (r_apagada << 16) | (g_apagada << 8) | b_apagada;
+        do {
+            // Gera uma cor aleatória para a cor acesa
+            uint8_t r_acesa = rand() % 256;
+            uint8_t g_acesa = rand() % 256;
+            uint8_t b_acesa = rand() % 256;
+            nova_cor_acesa = (r_acesa << 16) | (g_acesa << 8) | b_acesa;
+
+            // Gera uma cor aleatória para a cor apagada
+            uint8_t r_apagada = rand() % 256;
+            uint8_t g_apagada = rand() % 256;
+            uint8_t b_apagada = rand() % 256;
+            nova_cor_apagada = (r_apagada << 16) | (g_apagada << 8) | b_apagada;
+
+            // Verifica a distância entre as cores acesa e apagada
+        } while (calcular_distancia_rgb(nova_cor_acesa, nova_cor_apagada) < distancia_minima); // Garante que a distância seja maior que a mínima
+
+        // Atribui as novas cores geradas
+        cor_acesa = nova_cor_acesa;
+        cor_apagada = nova_cor_apagada;
 
         // Imprime as novas cores geradas
         printf("🎮 Joystick pressionado: Cores aleatórias alteradas! (Cor acesa: #%06X, Cor apagada: #%06X)\n", cor_acesa, cor_apagada);
