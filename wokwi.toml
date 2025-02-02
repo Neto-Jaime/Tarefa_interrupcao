@@ -1,0 +1,4 @@
+[wokwi]
+version = 1
+firmware = 'build/tarefa_interrupcao.uf2'
+elf = 'build/tarefa_interrupcao.elf'
