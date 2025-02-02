@@ -8,9 +8,9 @@
 #include <stdlib.h> 
 
 // Definição dos pinos
-#define LED_R 11
-#define LED_G 12
-#define LED_B 13
+#define LED_R 13
+#define LED_G 11
+#define LED_B 12
 #define BUTTON_A 5
 #define BUTTON_B 6
 #define MATRIX_WS2812 7
