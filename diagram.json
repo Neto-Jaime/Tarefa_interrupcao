@@ -62,6 +62,13 @@
       "top": 147.95,
       "left": 48,
       "attrs": { "value": "1000" }
+    },
+    {
+      "type": "wokwi-analog-joystick",
+      "id": "joystick1",
+      "top": 47.4,
+      "left": 274.2,
+      "attrs": {}
     }
   ],
   "connections": [
@@ -150,7 +157,9 @@
     [ "r1:2", "pico:GND.4", "black", [ "v19.2", "h-1.2" ] ],
     [ "pico:GP13", "rgb26:R", "magenta", [ "h0" ] ],
     [ "pico:GP12", "rgb26:B", "blue", [ "h-76.8", "v-67.16" ] ],
-    [ "pico:GP11", "rgb26:G", "green", [ "h0" ] ]
+    [ "pico:GP11", "rgb26:G", "green", [ "h0" ] ],
+    [ "pico:GP22", "joystick1:SEL", "green", [ "h0" ] ],
+    [ "joystick1:GND", "pico:GND.5", "black", [ "v0" ] ]
   ],
   "dependencies": {}
 }
