@@ -1,6 +1,7 @@
 # Projeto: Controle de Matriz de LEDs WS2812 com RP2040
 
 # By: Jaime Neto
+# Link do projeto rodando: 
 
 ## 📌 Descrição
 Este projeto utiliza a placa RP2040 (BitDogLab) para controlar uma matriz de LEDs WS2812 e um LED RGB com interação via botões e joystick. A matriz exibe números de 0 a 9, que podem ser alterados pelos botões, e muda de cor aleatoriamente ao pressionar o joystick.
